@@ -1,0 +1,70 @@
+```{r}
+library(jsonlite)
+
+json_data <- fromJSON("Housing2122.json")
+
+df <- as.data.frame(json_data)
+df
+
+```
+
+```{r}
+df$date <- as.character(df$date)
+
+df$date <- gsub("\\b\\d+(?:st|nd|rd|th)\\b", "", df$date)
+
+df$date <- as.Date(df$date, format = "%d %b %Y")
+
+df$date <- format(df$date, "%d/%m/%Y")
+```
+
+```{r}
+
+df[, !colnames(df) %in% c("sq.")] <- lapply(df[, !colnames(df) %in% c("sq.")], function(x) ifelse(is.na(x), 0, x))
+
+
+df
+```
+
+
+```{r}
+df$TotalBeds <-as.integer(df$beds)+ as.integer(df$bed)
+df$TotalBaths <- as.integer(df$baths) + as.integer(df$bath)
+df$TotalReception <- as.integer(df$reception) + as.integer(df$receptions)
+
+
+
+
+
+aggregate_data <- aggregate(cbind(TotalBeds, TotalBaths, TotalReception) ~ ., data = df[, c("sq.", "TotalBeds", "TotalBaths", "TotalReception")], FUN = sum)
+
+print(aggregate_data)
+```
+
+
+```{r}
+df$FlatType <- gsub("\\d+ bed (\\w+).*", "\\1", df$types)
+```
+
+```{r}
+output_file <- "Project_Housing.csv"
+
+tryCatch(
+  expr = {
+    
+    write.csv(df, output_file, row.names = FALSE)
+    print(paste("Pre-processed data is saved in", output_file))
+  },
+   error = function(e) {
+    # Print error message if file writing fails
+    print(paste("Error writing the CSV file:", e$message))
+  }
+)
+
+  print(aggregate_data)
+print(paste("Pre-processed data is saved in", output_file))
+
+
+```
+
+
