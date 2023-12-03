@@ -1,0 +1,81 @@
+proc import datafile="/home/u63697367/Project_Housing.csv" out=Housing dbms=csv replace;
+  getnames=yes;
+run;
+/*Q1 */
+PROC PRINT DATA=Housing(OBS=10000);
+RUN;
+/*Q2 */
+proc sql;
+	create table avgreceptions as
+	select FlatType,count(FlatType) as populationFlatType, avg(TotalReception) as avgReception from Housing
+	Group by FlatType;
+
+	select * from avgreceptions;
+run;
+
+proc sort data=AvgReceptions;
+  by descending AvgReception;
+run;
+
+proc sgplot data=AvgReceptions;
+  vbar FlatType / response=AvgReception;
+  xaxis discreteorder=data;
+  title "Average Number of Receptions by Property Type";
+run;
+/*Q3 */
+proc freq data=Housing;
+  tables FlatType / out=PropertyTypeFreq;
+  title "Contribution of House Type in the Record";
+run;
+
+
+proc sort data=PropertyTypeFreq;
+  by descending Count;
+run;
+
+proc sgplot data=PropertyTypeFreq;
+  vbar FlatType / response=Count;
+  xaxis discreteorder=data;
+  title "Property Type Distribution";
+run;
+proc sgpie data=PropertyTypeFreq;
+  pie FlatType / response=Count;
+  title "Property Type Distribution";
+run;
+
+/*Q4 */
+proc sql;
+	create table FlatTerraced as
+	select FlatType  as FlatTypewithflat, count(TotalBaths) as Baths from Housing(where=(FlatType in:('flat','terraced')))
+	Group by FlatType;
+
+	select * from FlatTerraced;
+run;
+
+/*Q5 */
+proc sort data=Housing;
+    by descending price;
+run;
+
+proc sgplot data=Housing;
+    hbar types / response=price;
+    xaxis discreteorder=data;
+    yaxis label="Turnover";
+run;
+/*Q6 */
+data Housing;
+    set Housing;
+    sq_num = input(sq, 8.);
+run;
+
+proc means data=Housing noprint;
+    class TotalBeds TotalBaths;
+    var price;
+    output out=avg_price mean=AvgPrice;
+run;
+
+proc sgplot data=avg_price;
+    scatter x=TotalBeds y=TotalBaths / colorresponse=AvgPrice colormodel=(BlueRed);
+    xaxis label="Number of Bedrooms";
+    yaxis label="Number of Bathrooms";
+run;
